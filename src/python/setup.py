@@ -8,7 +8,7 @@ setup(
 	author='Averell Levan',
 	author_email='lvhuyen@gmail.com',
 	url='https://github.com/lvhuyen/sparkaid',
-	download_url='https://github.com/lvhuyen/sparkaid/archive/v_01.tar.gz',
+	download_url='https://github.com/lvhuyen/SparkAid/archive/v0.1-alpha.tar.gz',
 	keywords=['SPARK', 'DATAFRAME', 'MANIPULATE'],
 	install_requires=[
 		'pyspark'
