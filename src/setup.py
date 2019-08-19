@@ -1,14 +1,13 @@
 from distutils.core import setup
 setup(
 	name='sparkaid',
-	packages=['starfox.sparkaid'],
+	packages=['sparkaid'],
 	version='0.1-alpha4',
 	license='gpl-3.0',
 	description='utils for working with Spark',
 	author='Averell Levan',
 	author_email='lvhuyen@gmail.com',
-	url='https://github.com/lvhuyen/sparkaid',
-	download_url='https://github.com/lvhuyen/SparkAid/archive/v0.1-alpha4.tar.gz',
+	url='https://github.com/lvhuyen/SparkAid',
 	keywords=['SPARK', 'DATAFRAME', 'MANIPULATE'],
 	install_requires=[
 
