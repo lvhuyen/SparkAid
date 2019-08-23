@@ -2,7 +2,7 @@ from distutils.core import setup
 setup(
 	name='sparkaid',
 	packages=['sparkaid'],
-	version='0.1-alpha4',
+	version='0.1-beta',
 	license='gpl-3.0',
 	description='utils for working with Spark',
 	author='Averell Levan',
@@ -13,7 +13,7 @@ setup(
 
 	],
 	classifiers=[
-		'Development Status :: 3 - Alpha',
+		'Development Status :: 4 - Beta',
 		'Intended Audience :: Developers',
 		'Topic :: Software Development :: Build Tools',
 		'License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)',

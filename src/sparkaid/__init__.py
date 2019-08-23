@@ -17,7 +17,7 @@ def __rename_nested_field__(in_field: DataType, fieldname_normaliser):
 
 
 def __normalise_fieldname__(raw: str):
-	return re.sub('[^A-Za-z0-9_]+', '_', raw.strip().lower())
+	return re.sub('[^A-Za-z0-9_]+', '_', raw.strip())
 
 
 def __get_fields_info__(dtype: DataType, name: str = ""):
