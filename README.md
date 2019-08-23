@@ -46,18 +46,20 @@ However, with a nested column, that function does not give any error, but also d
 To change the names of nested columns, there are some options:
 1. By building a new struct column on the flight with the `struct()` function:
 
-		from pyspark.sql.functions import struct, col
-		df_renamed = df_struct.withColumn("structA", struct(col("structA.field1").alias("newField1"),
-		                                                    col("structA.field2")))
+
+	from pyspark.sql.functions import struct, col
+	df_renamed = df_struct.withColumn("structA", struct(col("structA.field1").alias("newField1"),
+	                                                    col("structA.field2")))
 
 2. By creating a new *schema* (a `StructType()` object) and use type casting on the original struct column:
 
-		from pyspark.sql.types import *		
-		newStructASchema = StructType([
-	                            StructField("newField1", LongType()),
-	                            StructField("field2", DoubleType())
-	                        ])
-	    df_renamed = df_struct.withColumn("structA", col("structA").cast(newStructASchema)).printSchema()
+
+	from pyspark.sql.types import *		
+	newStructASchema = StructType([
+                            StructField("newField1", LongType()),
+                            StructField("field2", DoubleType())
+                        ])
+    df_renamed = df_struct.withColumn("structA", col("structA").cast(newStructASchema)).printSchema()
 	    
 Both options yield the same schema
 
