@@ -1,0 +1,39 @@
+{
+  "first_name" : "Sammy",
+  "last_name" : "Shark",
+  "location" : "Ocean",
+  "websites" : [
+    {
+      "description" : "work",
+      "URL" : [
+        {"secured":  false,
+          "URI":  "http://digitalocean.com/"},
+        {"secured":  true,
+          "URI":  "https://digitalocean.com/"}
+      ]
+    },
+    {
+      "description" : "tutorials",
+      "URL" : [
+        {"secured":  false,
+          "URI":  "http://tutorial.com/"},
+        {"secured":  true,
+          "URI":  "https://tutorial.com/"}
+      ]
+    }
+  ],
+  "social_media" : [
+    {
+      "description" : "twitter",
+      "link" : "https://twitter.com/digitalocean"
+    },
+    {
+      "description" : "facebook",
+      "link" : "https://www.facebook.com/DigitalOceanCloudHosting"
+    },
+    {
+      "description" : "github",
+      "link" : "https://github.com/digitalocean"
+    }
+  ]
+}

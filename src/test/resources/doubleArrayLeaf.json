@@ -1,0 +1,20 @@
+{
+  "first_name" : "Sammy",
+  "last_name" : "Shark",
+  "location" : "Ocean",
+  "websites" : [
+    {
+      "description" : "work",
+      "URL" : "https://www.digitalocean.com/"
+    },
+    {
+      "description" : "tutorials",
+      "URL" : "https://www.digitalocean.com/community/tutorials"
+    }
+  ],
+  "work_items" :
+    {
+      "description" : "rented",
+      "items" : ["desk", "laptop", "pencil"]
+    }
+}
