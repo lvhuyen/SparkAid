@@ -34,12 +34,15 @@ class NestedSchemaHandler(val separator:String = "___", val arrayDenotation: Str
     df.select(cols:_*)
   }
 
-  final def flattenAndExplode(df: DataFrame): DataFrame = {
-    innerFlattenAndExplode(df)
+  def flattenAndExplode(df: DataFrame): DataFrame = {
+    flattenAndExplode(df, normalizeRootSegment = true)
   }
 
+  /**
+   * This functions will flatten then explode one array at a time, and is implemented as a recursive function
+   * `normalizeRootSegment` is to avoid normalizing the parent segment multiple times  */
   @scala.annotation.tailrec
-  private def innerFlattenAndExplode(df: DataFrame, normalizeRootSegment: Boolean = true): DataFrame = {
+  private def flattenAndExplode(df: DataFrame, normalizeRootSegment: Boolean): DataFrame = {
     val cols: Vector[Column] = getFieldsInfoForFlattening(df.schema, includeArray = false)
       .foldLeft((Vector.empty[Column], false))((cols, i) => {
         i match {
@@ -61,7 +64,7 @@ class NestedSchemaHandler(val separator:String = "___", val arrayDenotation: Str
       case _ => false
     }) match {
       case 0 => ret
-      case _ => innerFlattenAndExplode(ret, false)
+      case _ => flattenAndExplode(ret, false)
     }
   }
 
@@ -82,7 +85,12 @@ class NestedSchemaHandler(val separator:String = "___", val arrayDenotation: Str
     df.select(cols:_*)
   }
 
-  /** This recursive function reads the nested schema, breaks down each root-leaf path into one 2-dimension collection of String.
+  /**
+   *  This recursive function reads the nested schema, breaks down each root-leaf path into one 2-dimension collection of String.
+   *  Terminologies:
+   *    Segment: represents one StructField in the input schema
+   *    Chunk: a collection of segments, with the n-th one nested in the (n-1)-th one
+   *    Path: represents one pathway in the input schema, from the root to one leaf, which seregated into multiple chunks by the existence of ArrayType and MapType
    *  Each (inner) element in the collection is one chunk of the nested schema. That big collection is broken down into segments separated by an ArrayType.
    *  E.g:
    *    For the root-leaf path (structA -> structB -> structC -> stringD), the output element is a 2-d collection,
@@ -179,7 +187,7 @@ class NestedSchemaHandler(val separator:String = "___", val arrayDenotation: Str
     }
 
     def printSchema(level:Int = 0): Unit = {
-      for(i <- 0 until level) { print("|   ")}
+      print("|   " * level)
       print(f"|-- $segmentName")
       if (isArray) print(" - Array of")
       value match {
@@ -189,6 +197,25 @@ class NestedSchemaHandler(val separator:String = "___", val arrayDenotation: Str
           t.foreach(c => c.printSchema(level + 1))
       }
     }
+//
+//    def tmp(spark: SparkSession) = {
+//      import org.apache.spark.sql.types.{ArrayType, DataType, IntegerType, LongType, StructField, StructType, MapType, StringType}
+//      import org.apache.spark.sql.Row
+//      import scala.collection.JavaConversions._
+//      val singersDF = spark.createDataFrame(Seq(
+//      Row("sublime", Map(
+//        "good_song" -> "santeria",
+//        "na" -> "lala",
+//        "bad_song" -> "doesn't exist")
+//      ), Row("prince_royce", Map(
+//          "good_song" -> "darte un beso",
+//          "bad_song" -> "back it up")
+//        )
+//      ), StructType(Seq(StructField("name", StringType, true), StructField("songs", MapType(StringType, StringType, true), true)))
+//      )
+//      singersDF.printSchema
+//
+//    }
   }
 
   private object SchemaNode {

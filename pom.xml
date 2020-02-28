@@ -35,64 +35,7 @@
             <scope>${lib.scope}</scope>
         </dependency>
        <!-- Test -->
-
-<!--        <dependency>-->
-<!--            <groupId>org.scalatest</groupId>-->
-<!--            <artifactId>scalatest_${scala.binary.version}</artifactId>-->
-<!--            <version>3.1.0</version>-->
-<!--            <scope>test</scope>-->
-<!--        </dependency>-->
-
-<!--        <dependency>-->
-<!--            <groupId>org.scalacheck</groupId>-->
-<!--            <artifactId>scalacheck_${scala.binary.version}</artifactId>-->
-<!--            <version>1.14.3</version>-->
-<!--            <scope>test</scope>-->
-<!--        </dependency>-->
-
-        <!-- Others -->
-
-<!--        <dependency>-->
-<!--            <groupId>org.yaml</groupId>-->
-<!--            <artifactId>snakeyaml</artifactId>-->
-<!--            <version>1.24</version>-->
-<!--        </dependency>-->
-
-<!--        <dependency>-->
-<!--            <groupId>org.scala-lang</groupId>-->
-<!--            <artifactId>scala-compiler</artifactId>-->
-<!--            <version>${scala.version}</version>-->
-<!--            <scope>${lib.scope}</scope>-->
-<!--        </dependency>-->
-
-<!--        <dependency>-->
-<!--            <groupId>org.eclipse.jetty</groupId>-->
-<!--            <artifactId>jetty-servlet</artifactId>-->
-<!--            <version>9.4.18.v20190429</version>-->
-<!--            <scope>compile</scope>-->
-<!--        </dependency>-->
-
-<!--        <dependency>-->
-<!--            <groupId>com.github.scopt</groupId>-->
-<!--            <artifactId>scopt_${scala.binary.version}</artifactId>-->
-<!--            <version>4.0.0-RC2</version>-->
-<!--            <scope>${lib.scope}</scope>-->
-<!--        </dependency>-->
-
     </dependencies>
-
-<!--    &lt;!&ndash; For specifying individual AWS SDK &ndash;&gt;-->
-<!--    <dependencyManagement>-->
-<!--        <dependencies>-->
-<!--            <dependency>-->
-<!--                <groupId>com.amazonaws</groupId>-->
-<!--                <artifactId>aws-java-sdk-bom</artifactId>-->
-<!--                <version>1.11.571</version>-->
-<!--                <type>pom</type>-->
-<!--                <scope>import</scope>-->
-<!--            </dependency>-->
-<!--        </dependencies>-->
-<!--    </dependencyManagement>-->
 
     <build>
         <plugins>
