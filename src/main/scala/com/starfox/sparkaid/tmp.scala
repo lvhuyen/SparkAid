@@ -1,4 +1,4 @@
-//package com.starfox.sparkaid
+package com.starfox.sparkaid
 
 import org.apache.spark.sql.types.{ArrayType, DataType, IntegerType, LongType, StructField, StructType}
 import org.apache.spark.sql.DataFrame
@@ -51,8 +51,10 @@ class tmp(val separator:String = "__", val arrayDenotation: String = "", val fie
         if (head.length > 1) s"${buildQualifiedName(head)} AS ${buildFlattenedChunkName(head)}"
         else s"$QUOTE${head.head}$QUOTE"
       case head +: anotherField =>
-        val tail = anotherField.head
-        s"ARR_${buildFlattenedChunkName(head)}.${buildQualifiedName(tail)} AS ${buildFlattenedFieldName(Vector(head, tail))}"
+        if (anotherField.head.isEmpty)
+            s"ARR_${buildFlattenedChunkName(head)} AS ${buildFlattenedChunkName(head)}"
+          else
+            s"ARR_${buildFlattenedChunkName(head)}.${buildQualifiedName(anotherField.head)} AS ${buildFlattenedFieldName(Vector(head, anotherField.head))}"
     })
 
     def getHiveType(sparkType: DataType): String = sparkType.typeName match {
@@ -91,7 +93,22 @@ class tmp(val separator:String = "__", val arrayDenotation: String = "", val fie
     //      (s"ROW(${tmp.map(_._1).mkString(", ")})", s"ROW(${tmp.map(_._2).mkString(", ")})")
     //    }
 
-    val joinClauses: Array[String] = fieldsInfo.filter(_._1.size == 2).filter(_._1.tail.head.nonEmpty)
+    val joinClauses1: Array[String] = fieldsInfo
+      .filter(_._1.size == 2)
+      .filter(_._1.tail.head.isEmpty)
+      .map(f => {
+        val qualifiedName = buildQualifiedName(f._1.head)
+        s"""CROSS JOIN UNNEST (
+           |  CASE
+           |    WHEN cardinality($qualifiedName) > 0 then $qualifiedName
+           |    ELSE ARRAY[null]
+           |  END
+           |) AS t(ARR_${buildFlattenedChunkName(f._1.head)})""".stripMargin
+      })
+
+    val joinClauses2: Array[String] = fieldsInfo
+      .filter(f => f._1.size == 2)
+      .filter(_._1.tail.head.nonEmpty)
       .map(f => (f._1.head, f._1.tail.head, f._2))
       .groupBy(_._1)
       .map(g => {
@@ -112,32 +129,10 @@ class tmp(val separator:String = "__", val arrayDenotation: String = "", val fie
            |) AS t(ARR_${buildFlattenedChunkName(key)})""".stripMargin
       }).toArray
 
-    val joinClauses1: Array[String] = fieldsInfo.filter(_._1.size == 2).filter(_._1.tail.head.nonEmpty)
-      .map(f => (f._1.head, f._1.tail.head.head, f._2))
-      .groupBy(_._1)
-      .map(g => {
-        val key: Vector[String] = g._1
-        val children: Array[(String, DataType)] = g._2.map(f => (f._2, f._3))
-        val qualifiedName = key.map(segment => f"$QUOTE$segment$QUOTE").mkString(".")
-        val emptyRow = children.map(_ => "null").mkString(", ")
-        val rowSchema = children.map(f => s"${f._1} ${f._2.typeName match {
-          case "string" => "varchar"
-          case _ => f._2.typeName}
-        }").mkString(", ")
-
-        s"""CROSS JOIN UNNEST (
-           |  CASE
-           |    WHEN cardinality($qualifiedName) > 0 then $qualifiedName
-           |    ELSE ARRAY[
-           |      CAST(ROW($emptyRow)
-           |        AS ROW($rowSchema))]
-           |  END
-           |) AS t(${buildFlattenedChunkName(key)})""".stripMargin
-      }).toArray
-
     s"""SELECT ${cols.mkString(",\n    ")}
        |FROM ${rawTableName}
-       |${joinClauses.mkString("\n")}
+       |${joinClauses1.mkString("\n")}
+       |${joinClauses2.mkString("\n")}
        |""".stripMargin
   }
 
@@ -157,11 +152,12 @@ class tmp(val separator:String = "__", val arrayDenotation: String = "", val fie
 
       case ar: ArrayType =>
         if (includeArray)
-          ar.elementType match {
-            case e @ (_: StructType | _: ArrayType) =>
-              getFieldsInfoForFlattening(e).map(child => (Vector(name) ++ child._1, child._2))
-            case e => Array((Vector(name), e))
-          }
+          getFieldsInfoForFlattening(ar.elementType).map(child => (Vector(name) ++ child._1, child._2))
+//          ar.elementType match {
+//            case e @ (_: StructType | _: ArrayType) =>
+//              getFieldsInfoForFlattening(e).map(child => (Vector(name) ++ child._1, child._2))
+//            case e => Array((Vector(name), e))
+//          }
         else Array((Vector(name) ++ Vector(Vector.empty[String]), ar))
 
       case _ => Array((Vector(name), dtype))
