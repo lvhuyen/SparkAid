@@ -1,7 +1,7 @@
 package com.starfox.sparkaid
 
 import org.apache.spark.sql.types.{ArrayType, DataType, IntegerType, LongType, StructField, StructType}
-import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.{DataFrame, SparkSession}
 
 import scala.collection.mutable
 
@@ -176,4 +176,77 @@ class tmp(val separator:String = "__", val arrayDenotation: String = "", val fie
   }
 
   private def buildQualifiedName(raw: Vector[String]): String = raw.map(segment => f"$QUOTE$segment$QUOTE").mkString(".")
+}
+
+
+object tmp {
+  def generateBackupTable(spark: SparkSession,
+                          old_db_name: String,
+                          old_table_name: String,
+                          new_db_name: String,
+                          new_table_name_suffix: String,
+                          athena_temp_location: String): Unit = {
+    /** querying table DDL */
+
+    val new_table_name = old_table_name + new_table_name_suffix
+
+    val ddl_table_raw = spark.sql(s"SHOW CREATE TABLE $old_db_name.$old_table_name").collect()(0)(0).toString()
+
+    val partitions_regex = """PARTITIONED BY \(([ ,`\w]+)\)""".r
+    val partition_columns = (partitions_regex.findFirstMatchIn(ddl_table_raw) match {
+      case Some(s) => s.group(1)
+      case _ => ""
+    }).split(",").flatMap(s => {
+      "`(\\w+)`".r.findFirstMatchIn(s) match {
+        case Some(p) => Array(p.group(1))
+        case _ => Array.empty[String]
+      }
+    })
+    val ddl_table_new = """(CREATE (?:EXTERNAL )?TABLE) (?:[`\w.])+""".r.replaceAllIn(ddl_table_raw, s"CREATE EXTERNAL TABLE $new_db_name.$new_table_name")
+
+
+    /** querying Athena to get partitions **/
+    val partition_list_query = s"""select distinct substr("$$path", 1, length("$$path") - position('/' in reverse("$$path"))) as path, ${partition_columns.mkString(",")}
+from $old_db_name.$old_table_name
+order by ${partition_columns.mkString(",")}"""
+
+    import com.amazonaws.services.athena._
+    import com.amazonaws.services.athena.model._
+    val athena = AmazonAthenaClientBuilder.defaultClient()
+    val athena_query = new StartQueryExecutionRequest()
+    val result_cfg = new ResultConfiguration()
+    result_cfg.setOutputLocation(athena_temp_location)
+    athena_query.setResultConfiguration(result_cfg)
+    athena_query.setQueryString(partition_list_query)
+
+    val startQueryExecutionResponseId = athena.startQueryExecution(athena_query).getQueryExecutionId
+    val getQueryExecutionRequest: GetQueryExecutionRequest = new GetQueryExecutionRequest()
+
+    getQueryExecutionRequest.setQueryExecutionId(startQueryExecutionResponseId)
+    var isQueryStillRunning = true
+    while (isQueryStillRunning) {
+      val getQueryExecutionResponse = athena.getQueryExecution(getQueryExecutionRequest);
+      val queryState = getQueryExecutionResponse.getQueryExecution().getStatus().getState()
+      println("Current Status is: " + queryState)
+      isQueryStillRunning = !queryState.equals(QueryExecutionState.SUCCEEDED.toString())
+      Thread.sleep(3000)
+    }
+
+    /** Execute DDLs to generate backup table */
+
+    val raw_parts = spark.read.option("header", "true").csv(s"$athena_temp_location$startQueryExecutionResponseId.csv").collect().map(_.toSeq.toList.map(_.toString))
+    val ddl_add_partitions = raw_parts.map(part => {
+      val partDesc = partition_columns.zip(part.tail).map(pair => s"${pair._1} = '${pair._2}'").mkString(", ")
+      s"PARTITION ($partDesc) LOCATION '${part.head}'"
+    }).grouped(1000).map(_.mkString(" ")).map(part => s"ALTER TABLE $new_db_name.$new_table_name ADD $part")
+
+    // spark.sql(ddl_table_new)
+    println(s"Adding ${raw_parts.length} partitions to the table $new_table_name...")
+    ddl_add_partitions.foreach(s => {
+      spark.sql(s)
+      println("Up to 1000 partitions added")
+      Thread.sleep(50)
+    })
+
+  }
 }
