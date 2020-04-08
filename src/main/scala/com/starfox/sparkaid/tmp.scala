@@ -15,35 +15,6 @@ class tmp(val separator:String = "__", val arrayDenotation: String = "", val fie
     ret
   }
 
-  def buildHiveCreateTableDdl(df: DataFrame, tableName: String, location: String, partitions: Seq[String]): String = {
-    def toHiveSchemaString(fieldType: DataType, indentLevel: Int = 2): String = {
-      val indent = "    " * indentLevel
-      val dataType = fieldType match {
-        case a: ArrayType => s"array<\n$indent${toHiveSchemaString(a.elementType, indentLevel + 1)}>"
-        case s: StructType =>
-          val children = s.fields.map(f => s"""`${f.name}`:${toHiveSchemaString(f.dataType, indentLevel + 1)}""").mkString(s",\n$indent")
-          s"struct<\n$indent$children>"
-        case _: IntegerType => s"int"
-        case _: LongType => s"bigint"
-        case _ => s"${fieldType.typeName}"
-      }
-      dataType
-    }
-
-    val schemaString = df.schema.fields.filter(field => !partitions.contains(field.name)).map(f => s"""`${f.name}` ${toHiveSchemaString(f.dataType)}""").mkString(",\n     ")
-    val partitionsString = df.schema.fields.filter(field => partitions.contains(field.name)).map(f => s"""`${f.name}` ${toHiveSchemaString(f.dataType)}""").mkString(", ")
-
-    s"""
-       |CREATE EXTERNAL TABLE $tableName (\n
-       |     $schemaString) \n
-       | PARTITIONED BY ($partitionsString) \n
-       | ROW FORMAT SERDE 'org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe' \n
-       | STORED AS INPUTFORMAT 'org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat' \n
-       | OUTPUTFORMAT 'org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat' \n
-       | LOCATION '$location'
-       """.stripMargin
-  }
-
   def buildHiveFlattenQuery(df: DataFrame, rawTableName: String): String = {
     val fieldsInfo: Array[(Vector[Vector[String]], DataType)] = getFieldsInfoForFlattening(df.schema)
     val cols: Array[String] = fieldsInfo.map (f => f._1 match {
@@ -180,6 +151,39 @@ class tmp(val separator:String = "__", val arrayDenotation: String = "", val fie
 
 
 object tmp {
+    def buildHiveCreateTableDdl(schema: StructType, tableName: String, location: String, partitions: Seq[String]): String = {
+        def toHiveSchemaString(fieldType: DataType, indentLevel: Int = 2): String = {
+            val indent = "    " * indentLevel
+            val dataType = fieldType match {
+                case a: ArrayType => s"array<\n$indent${toHiveSchemaString(a.elementType, indentLevel + 1)}>"
+                case s: StructType =>
+                    val children = s.fields.map(f => s"""`${f.name}`:${toHiveSchemaString(f.dataType, indentLevel + 1)}""").mkString(s",\n$indent")
+                    s"struct<\n$indent$children>"
+                case _: IntegerType => s"int"
+                case _: LongType => s"bigint"
+                case _ => s"${fieldType.typeName}"
+            }
+            dataType
+        }
+
+        val schemaString = schema.fields.filter(field => !partitions.contains(field.name)).map(f => s"""`${f.name}` ${toHiveSchemaString(f.dataType)}""").mkString(",\n     ")
+        val partitionsString = schema.fields.filter(field => partitions.contains(field.name)).map(f => s"""`${f.name}` ${toHiveSchemaString(f.dataType)}""").mkString(", ")
+
+        s"""
+           |CREATE EXTERNAL TABLE $tableName (\n
+           |     $schemaString) \n
+           | PARTITIONED BY ($partitionsString) \n
+           | ROW FORMAT SERDE 'org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe' \n
+           | STORED AS INPUTFORMAT 'org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat' \n
+           | OUTPUTFORMAT 'org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat' \n
+           | LOCATION '$location'
+       """.stripMargin
+    }
+
+    def buildHiveCreateTableDdl(df: DataFrame, tableName: String, location: String, partitions: Seq[String]): String = {
+        buildHiveCreateTableDdl(df.schema, tableName, location, partitions)
+    }
+
   def generateBackupTable(spark: SparkSession,
                           old_db_name: String,
                           old_table_name: String,
