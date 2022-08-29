@@ -1,4 +1,6 @@
 .*
 *.iml
 target
+dist
+*.egg-info
 */.DS_Store

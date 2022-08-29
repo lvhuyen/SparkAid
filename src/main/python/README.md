@@ -1,5 +1,15 @@
 # Spark - Dataframe with complex schema
 
+# Changelog
+### Version 1.0.0:
+* **_[Breaking changes]_** `flatten()` now stops the unpacking of nested data at ArrayType
+  (i.e: any field with DataType = ArrayType will have its nested elements as-is).
+  To have the same result as in the previous version - flatten all array fields, add the param `arrays_to_unpack = ["*"]`.
+* Added `snake_case()`
+* Added `json_schema_to_spark_schema()`
+* Added support for providing the param `nested_struct_separator` to `flatten()`.
+  Example: When provided with the value "___", the raw schema `{"parent": {"child": "some_value"}}` will be unpacked to `{"parrent___child": "some_value"}`
+
 # Problem description
 A Spark DataFrame can have a simple schema, where every single column is of a simple datatype like `IntegerType, BooleanType, StringType`,...
 However, a column can be of one of the complex types: `ArrayType`, `MapType`, or `StructType`. The schema itself is, actually, an instance of the type `StructType`. So, when a schema has column(s) with DataType is StructType, we have a nested schema.
@@ -270,7 +280,7 @@ A comprehensive implementation of a flatten function can be found in the Python 
 	 |-- arrayA__childStructB_field2: array (nullable = true)
 	 |    |-- element: array (containsNull = true)
 	 |    |    |-- element: string (containsNull = true)
-</p>
+<p>
 
 	flatten(df_nested_B).show()
 	
@@ -279,7 +289,7 @@ A comprehensive implementation of a flatten function can be found in the Python 
     +---------------------------+---------------------------+
     |                   [[1, 2]]|               [[foo, bar]]|
     +---------------------------+---------------------------+
-</p>
+<p>
   
     flatten(df_nested_C).printSchema()
 
