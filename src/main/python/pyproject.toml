@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sparkaid"
+version = "1.0.0"
+description = "Utils for working with Spark"
+readme = "README.md"
+authors = [{ name = "Averell Levan", email = "lvhuyen@yahoo.com" }]
+license = { file = "LICENSE" }
+classifiers = [
+    'Development Status :: 4 - Beta',
+    'Intended Audience :: Developers',
+    'Topic :: Software Development :: Build Tools',
+    'License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)',
+    'Programming Language :: Python :: 3',
+]
+keywords = ["SPARK", "DATAFRAME", "MANIPULATE"]
+dependencies = [
+    "pyspark>=2.4.0",
+]
+requires-python = ">=3.4"
+
+[project.optional-dependencies]
+dev = ["pip-tools", "pytest"]
+
+[project.urls]
+Homepage = "https://github.com/lvhuyen/SparkAid"
+
+[project.scripts]
